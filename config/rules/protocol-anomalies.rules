@@ -1,0 +1,45 @@
+#
+# Protocol Anomalies and Covert Channel Detection Rules
+#
+
+# ICMP Tunneling Detection
+alert icmp $HOME_NET any -> $EXTERNAL_NET any (msg:"NIDS-ICMP Tunneling - Unusual Size"; dsize:>1000; itype:0; threshold: type both, track by_dst, count 10, seconds 60; classtype:policy-violation; sid:6000001; rev:1;)
+alert icmp $HOME_NET any -> $EXTERNAL_NET any (msg:"NIDS-ICMP Tunneling - High Rate"; itype:0; threshold: type both, track by_dst, count 100, seconds 60; classtype:policy-violation; sid:6000002; rev:1;)
+
+# Abnormal HTTP Methods
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-Suspicious HTTP Method - CONNECT"; flow:to_server,established; content:"CONNECT"; http_method; classtype:web-application-activity; sid:6000010; rev:1;)
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-Suspicious HTTP Method - TRACK"; flow:to_server,established; content:"TRACK"; http_method; classtype:web-application-activity; sid:6000011; rev:1;)
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-Suspicious HTTP Method - DEBUG"; flow:to_server,established; content:"DEBUG"; http_method; classtype:web-application-activity; sid:6000012; rev:1;)
+
+# Non-standard protocol on common ports
+alert tcp $EXTERNAL_NET any -> $HOME_NET 80 (msg:"NIDS-Non-HTTP Traffic on HTTP Port"; flow:to_server,established; content:"|00 00 00 00|"; depth:4; classtype:non-standard-protocol; sid:6000020; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 22 (msg:"NIDS-Non-SSH Traffic on SSH Port"; flow:to_server,established; content:"<"; depth:1; classtype:non-standard-protocol; sid:6000021; rev:1;)
+
+# SMTP Command Injection
+alert tcp $EXTERNAL_NET any -> $HOME_NET 25 (msg:"NIDS-SMTP Command Injection"; flow:to_server,established; pcre:"/(?:\r\n|\n)[A-Z]{2,}?\s*;/i"; threshold: type both, track by_src, count 1, seconds 86400; classtype:policy-violation; sid:6000030; rev:1;)
+
+# DNS Zone Transfer Attempt
+alert tcp $EXTERNAL_NET any -> $HOME_NET 53 (msg:"NIDS-DNS Zone Transfer Attempt"; flow:to_server,established; content:"|00 00 01 00 00 01 00 00 00 00 00 00|"; offset:12; depth:12; classtype:attempted-recon; sid:6000040; rev:1;)
+
+# SSH Protocol Mismatch
+alert tcp $EXTERNAL_NET any -> $HOME_NET 22 (msg:"NIDS-SSH Protocol Mismatch - Non-SSH Data"; flow:to_server,established; threshold: type both, track by_src, count 5, seconds 60; classtype:non-standard-protocol; sid:6000050; rev:1;)
+
+# SMB Null Session
+alert tcp $EXTERNAL_NET any -> $HOME_NET 445 (msg:"NIDS-SMB Null Session Access"; flow:to_server; threshold: type both, track by_src, count 1, seconds 86400; classtype:attempted-admin; sid:6000060; rev:1;)
+
+# IRC Botnet Communication
+alert tcp $EXTERNAL_NET any -> $HOME_NET 6660:6669 (msg:"NIDS-IRC Botnet - Nickname Change Flood"; flow:established; content:"NICK"; nocase; threshold: type both, track by_src, count 20, seconds 30; classtype:trojan-activity; sid:6000070; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 6660:6669 (msg:"NIDS-IRC Botnet - CTCP Version Flood"; flow:established; content:"VERSION"; nocase; threshold: type both, track by_src, count 10, seconds 30; classtype:trojan-activity; sid:6000071; rev:1;)
+
+# SNMP Community String Attempts
+alert udp $EXTERNAL_NET any -> $HOME_NET 161 (msg:"NIDS-SNMP Public Community String"; flow:to_server; content:"public"; nocase; threshold: type both, track by_src, count 5, seconds 60; classtype:attempted-recon; sid:6000080; rev:1;)
+alert udp $EXTERNAL_NET any -> $HOME_NET 161 (msg:"NIDS-SNMP Private Community String"; flow:to_server; content:"private"; nocase; threshold: type both, track by_src, count 3, seconds 60; classtype:attempted-recon; sid:6000081; rev:1;)
+
+# SUID Binary Execution over SSH (post-exploitation indicator)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 22 (msg:"NIDS-Suspicious SSH - chmod +s Command"; flow:established; content:"chmod"; nocase; content:"+s"; distance:0; classtype:suspicious-filename-detect; sid:6000090; rev:1;)
+
+# Heartbleed CVE-2014-0160
+alert tls $EXTERNAL_NET any -> $HOME_NET 443 (msg:"NIDS-Heartbleed CVE-2014-0160"; flow:to_server,established; content:"|18 03 01|"; depth:3; byte_test:1,&,0x0f,20,relative; classtype:attempted-user; sid:6000100; rev:2;)
+
+# SMB EternalBlue Exploit Pattern
+alert tcp $EXTERNAL_NET any -> $HOME_NET 445 (msg:"NIDS-EternalBlue SMB Exploit Pattern"; flow:to_server,established; content:"|ff 53 4d 42|"; offset:4; depth:4; classtype:attempted-admin; sid:6000110; rev:1;)

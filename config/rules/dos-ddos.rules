@@ -1,0 +1,35 @@
+#
+# Denial of Service and DDoS Detection Rules
+#
+
+# SYN Flood Detection
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-SYN Flood Attack"; flags:S; flow:stateless; threshold: type both, track by_src, count 500, seconds 10; classtype:attempted-dos; sid:5000001; rev:1;)
+
+# UDP Flood Detection
+alert udp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-UDP Flood Attack"; threshold: type both, track by_src, count 500, seconds 10; classtype:attempted-dos; sid:5000002; rev:1;)
+
+# ICMP Flood Detection
+alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-ICMP Flood Attack"; itype:8; threshold: type both, track by_src, count 500, seconds 10; classtype:attempted-dos; sid:5000003; rev:1;)
+
+# DNS Amplification Attack Detection
+alert udp $HOME_NET any -> $EXTERNAL_NET 53 (msg:"NIDS-DNS Amplification - High Response Rate"; threshold: type both, track by_dst, count 1000, seconds 5; classtype:attempted-dos; sid:5000010; rev:1;)
+alert udp $EXTERNAL_NET 53 -> $HOME_NET any (msg:"NIDS-DNS Amplification Response Flood"; dsize:512; threshold: type both, track by_src, count 100, seconds 5; classtype:attempted-dos; sid:5000011; rev:1;)
+
+# HTTP Flood Detection
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-HTTP Flood Attack"; flow:to_server,established; threshold: type both, track by_src, count 1000, seconds 60; classtype:attempted-dos; sid:5000020; rev:1;)
+
+# Slowloris Attack Detection
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-Slowloris Attack - Slow Headers"; flow:to_server,established; content:"GET"; http_method; content:POST; http_method; threshold: type both, track by_src, count 50, seconds 60; classtype:attempted-dos; sid:5000030; rev:1;)
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-Slowloris Attack - Partial POST"; flow:to_server,established; content:"Content-Length|3a 20|0"; http_header; threshold: type both, track by_src, count 50, seconds 60; classtype:attempted-dos; sid:5000031; rev:1;)
+
+# Ping of Death Detection
+alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-Ping of Death"; dsize:>65535; itype:8; classtype:attempted-dos; sid:5000040; rev:1;)
+
+# Teardrop Attack Detection (fragmented ICMP)
+alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-Teardrop Attack - Overlapping Fragments"; fragbits:M; fragoffset:0; classtype:attempted-dos; sid:5000041; rev:1;)
+
+# Land Attack Detection (same source and destination)
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-Land Attack"; flags:S; sameip; classtype:attempted-dos; sid:5000050; rev:1;)
+
+# Smurf Attack Detection
+alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-Smurf Attack - Broadcast Ping"; itype:8; broadcast; threshold: type both, track by_src, count 100, seconds 10; classtype:attempted-dos; sid:5000051; rev:1;)

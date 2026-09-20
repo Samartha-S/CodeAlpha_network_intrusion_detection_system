@@ -1,0 +1,40 @@
+#
+# Web Application Attack Detection Rules
+#
+
+# SQL Injection detection
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-SQL Injection Attempt - UNION SELECT"; flow:to_server,established; content:"UNION"; http_uri; nocase; content:"SELECT"; http_uri; nocase; distance:0; classtype:web-application-attack; sid:2000001; rev:2;)
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-SQL Injection Attempt - OR 1=1"; flow:to_server,established; pcre:"/(\bOR\b\s*['\"]?\d+['\"]?\s*=\s*['\"]?\d+|UNION\s+SELECT|SELECT.*FROM\s+|INSERT\s+INTO|DROP\s+TABLE|UPDATE.*SET)/i"; classtype:web-application-attack; sid:2000002; rev:1;)
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-SQL Injection Attempt - Comment Sequence"; flow:to_server,established; content:"--"; http_uri; nocase; pcre:"/(\bor\b|\band\b)\s+[\w'\"`]+\s*=\s*[\w'\"`]+\s*--/i"; classtype:web-application-attack; sid:2000003; rev:1;)
+
+# Cross-Site Scripting (XSS) detection
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-XSS Script Tag Injection"; flow:to_server,established; content:"<script"; http_uri; nocase; classtype:web-application-attack; sid:2000010; rev:1;)
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-XSS JavaScript URI Injection"; flow:to_server,established; content:"javascript:"; http_uri; nocase; classtype:web-application-attack; sid:2000011; rev:1;)
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-XSS OnEvent Handler Injection"; flow:to_server,established; pcre:"/on(load|error|click|mouseover|submit|focus|blur|change|keyup|keydown)\s*=/i"; classtype:web-application-attack; sid:2000012; rev:1;)
+
+# Local File Inclusion (LFI) detection
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-LFI Path Traversal Attempt"; flow:to_server,established; content:"../"; http_uri; nocase; classtype:web-application-attack; sid:2000020; rev:1;)
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-LFI /etc/passwd Access Attempt"; flow:to_server,established; content:"etc/passwd"; http_uri; nocase; classtype:web-application-attack; sid:2000021; rev:1;)
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-LFI Null Byte Injection"; flow:to_server,established; content:"%00"; http_uri; nocase; classtype:web-application-attack; sid:2000022; rev:1;)
+
+# Remote File Inclusion (RFI) detection
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-RFI Remote File Inclusion"; flow:to_server,established; pcre:"/(http|https|ftp|php|data):\/\/[^\s\"']+/i"; content:".php"; http_uri; nocase; classtype:web-application-attack; sid:2000030; rev:1;)
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-RFI URL in Parameter"; flow:to_server,established; pcre:"/(?:^|[\?&])[\w\[\]]+=https?:\/\//i"; classtype:web-application-attack; sid:2000031; rev:1;)
+
+# Command Injection detection
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-Command Injection Attempt"; flow:to_server,established; pcre:"/(?:;|\||`|\$\(|\|\||&&)\s*(?:cat|ls|id|whoami|wget|curl|nc|bash|sh|ps|netstat|ifconfig)\b/i"; classtype:web-application-attack; sid:2000040; rev:1;)
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-Command Injection via URL Encoding"; flow:to_server,established; content:"%3B"; http_uri; nocase; content:"%7C"; http_uri; nocase; distance:0; classtype:web-application-attack; sid:2000041; rev:1;)
+
+# PHP-specific attacks
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-PHP Code Injection"; flow:to_server,established; pcre:"/(?:\$_GET|\$_POST|\$_REQUEST|\$_COOKIE)\s*\[/i"; content:"php://"; http_uri; nocase; classtype:web-application-attack; sid:2000050; rev:1;)
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-PHP Eval Injection"; flow:to_server,established; content:"eval"; http_uri; nocase; content:"base64_decode"; http_uri; nocase; distance:0; classtype:web-application-attack; sid:2000051; rev:1;)
+
+# Shell injection
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-Shellshock CVE-2014-6271"; flow:to_server,established; content:"() {"; http_header; nocase; classtype:web-application-attack; sid:2000060; rev:1;)
+
+# Directory listing / enumeration
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-Directory Listing Request"; flow:to_server,established; content:"/"; http_uri; depth:1; content:".php"; http_uri; nocase; pcre:"/\.(htaccess|htpasswd|git|svn|env|bak|backup|sql|config|log)$/i"; classtype:web-application-activity; sid:2000070; rev:1;)
+
+# WordPress specific attacks
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-WordPress Login Brute Force"; flow:to_server,established; content:"POST"; http_method; content:"/wp-login.php"; http_uri; nocase; threshold: type both, track by_src, count 20, seconds 60; classtype:attempted-user; sid:2000080; rev:1;)
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-WordPress XML-RPC Pingback"; flow:to_server,established; content:"POST"; http_method; content:"xmlrpc.php"; http_uri; nocase; content:"pingback"; http_client_body; nocase; classtype:web-application-activity; sid:2000081; rev:1;)

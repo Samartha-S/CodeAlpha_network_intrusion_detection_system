@@ -1,0 +1,34 @@
+#
+# Authentication Attack Detection Rules
+#
+
+# SSH Brute Force Detection
+alert tcp $EXTERNAL_NET any -> $HOME_NET 22 (msg:"NIDS-SSH Brute Force Attempt"; flow:to_server,established; flags:S; threshold: type both, track by_src, count 5, seconds 60; classtype:attempted-user; sid:3000001; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 22 (msg:"NIDS-SSH Multiple Failed Connections"; flow:established; threshold: type both, track by_src, count 30, seconds 300; classtype:attempted-user; sid:3000002; rev:1;)
+
+# FTP Brute Force Detection
+alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"NIDS-FTP Brute Force Attempt"; flow:to_server,established; threshold: type both, track by_src, count 10, seconds 60; classtype:attempted-user; sid:3000010; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"NIDS-FTP Login Failure"; flow:established; content:"530 Login incorrect"; nocase; threshold: type both, track by_src, count 5, seconds 300; classtype:attempted-user; sid:3000011; rev:1;)
+
+# Telnet Brute Force Detection
+alert tcp $EXTERNAL_NET any -> $HOME_NET 23 (msg:"NIDS-Telnet Brute Force Attempt"; flow:to_server,established; threshold: type both, track by_src, count 10, seconds 60; classtype:attempted-user; sid:3000020; rev:1;)
+
+# RDP Brute Force Detection
+alert tcp $EXTERNAL_NET any -> $HOME_NET 3389 (msg:"NIDS-RDP Brute Force Attempt"; flow:to_server,established; threshold: type both, track by_src, count 5, seconds 60; classtype:attempted-user; sid:3000030; rev:1;)
+
+# HTTP Form Authentication Brute Force
+alert http $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (msg:"NIDS-HTTP Authentication Brute Force"; flow:to_server,established; content:"POST"; http_method; content:"Authorization|3a|"; http_header; nocase; threshold: type both, track by_src, count 20, seconds 60; classtype:attempted-user; sid:3000040; rev:1;)
+
+# SMTP Brute Force
+alert tcp $EXTERNAL_NET any -> $HOME_NET 25 (msg:"NIDS-SMTP Brute Force Attempt"; flow:to_server,established; threshold: type both, track by_src, count 10, seconds 60; classtype:attempted-user; sid:3000050; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 465 (msg:"NIDS-SMTPS Brute Force Attempt"; flow:to_server,established; threshold: type both, track by_src, count 10, seconds 60; classtype:attempted-user; sid:3000051; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 587 (msg:"NIDS-SMTP Submission Brute Force"; flow:to_server,established; threshold: type both, track by_src, count 10, seconds 60; classtype:attempted-user; sid:3000052; rev:1;)
+
+# Database Brute Force (MySQL, MSSQL, PostgreSQL)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 3306 (msg:"NIDS-MySQL Brute Force Attempt"; flow:to_server,established; threshold: type both, track by_src, count 10, seconds 60; classtype:attempted-user; sid:3000060; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 1433 (msg:"NIDS-MSSQL Brute Force Attempt"; flow:to_server,established; threshold: type both, track by_src, count 10, seconds 60; classtype:attempted-user; sid:3000061; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 5432 (msg:"NIDS-PostgreSQL Brute Force Attempt"; flow:to_server,established; threshold: type both, track by_src, count 10, seconds 60; classtype:attempted-user; sid:3000062; rev:1;)
+
+# Default Credential Attempts
+alert tcp $EXTERNAL_NET any -> $HOME_NET 22 (msg:"NIDS-Default SSH Credential Attempt"; flow:to_server,established; content:"root"; depth:40; threshold: type both, track by_src, count 3, seconds 300; classtype:attempted-user; sid:3000070; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"NIDS-Default FTP Credential Attempt"; flow:to_server,established; content:"anonymous"; nocase; threshold: type both, track by_src, count 3, seconds 300; classtype:attempted-user; sid:3000071; rev:1;)

@@ -1,0 +1,61 @@
+version: "3.8"
+
+services:
+  suricata-nids:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: suricata-nids
+    network_mode: host
+    privileged: true
+    environment:
+      - SURICATA_INTERFACE=${SURICATA_INTERFACE:-eth0}
+      - SURICATA_CONFIG_PATH=/opt/nids/config
+      - SURICATA_RULE_PATH=/opt/nids/config/rules
+      - SURICATA_LOG_DIR=/var/log/suricata
+    volumes:
+      - ./logs:/var/log/suricata
+      - ./alerts:/opt/nids/alerts
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_PTRACE
+      - IPC_LOCK
+    ulimits:
+      memlock: -1
+
+  nids-dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: nids-dashboard
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./logs:/var/log/suricata:ro
+      - ./alerts:/opt/nids/alerts:ro
+    environment:
+      - EVE_FILE=/var/log/suricata/eve.json
+    depends_on:
+      - suricata-nids
+    restart: unless-stopped
+    entrypoint: ["python3", "/opt/nids/scripts/dashboard.py"]
+    command: ["--eve-file", "/var/log/suricata/eve.json", "--port", "5001", "--host", "0.0.0.0"]
+
+  nids-responder:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: nids-responder
+    volumes:
+      - ./logs:/var/log/suricata:ro
+      - ./alerts:/opt/nids/alerts
+    environment:
+      - EVE_FILE=/var/log/suricata/eve.json
+    depends_on:
+      - suricata-nids
+    restart: unless-stopped
+    entrypoint: ["python3", "/opt/nids/scripts/respond.py"]
+    command: ["--daemon", "/var/log/suricata/eve.json"]

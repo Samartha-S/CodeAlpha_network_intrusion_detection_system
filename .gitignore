@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Suricata runtime data
+logs/
+alerts/incidents.log
+alerts/watchlist.txt
+alerts/blocked-ips.json
+alerts/active-alerts.log
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.*
+
+# Local configuration
+.kilo/
+agent-manager.json

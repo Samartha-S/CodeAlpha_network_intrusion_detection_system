@@ -1,0 +1,33 @@
+#
+# Network Scan Detection Rules
+#
+
+# Detect nmap TCP scan (SYN packets with no further data)
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-NMAP TCP Port Scan"; flags:S; flow:stateless; threshold: type both, track by_src, count 30, seconds 60; classtype:attempted-recon; sid:1000001; rev:1;)
+
+# Detect nmap connect scan
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-NMAP Connect Scan"; flags:S,12; flow:stateless; threshold: type both, track by_src, count 30, seconds 60; classtype:attempted-recon; sid:1000002; rev:1;)
+
+# Detect Xmas scan (FIN+URG+PSH flags set)
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-Xmas Scan"; flags:FUP; flow:stateless; threshold: type both, track by_src, count 5, seconds 60; classtype:attempted-recon; sid:1000003; rev:1;)
+
+# Detect Null scan (no flags set)
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-Null Scan"; flags:0; flow:stateless; threshold: type both, track by_src, count 5, seconds 60; classtype:attempted-recon; sid:1000004; rev:1;)
+
+# Detect FIN scan
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-FIN Scan"; flags:F; flow:stateless; threshold: type both, track by_src, count 5, seconds 60; classtype:attempted-recon; sid:1000005; rev:1;)
+
+# Detect SYN scan with low rate (Stealth scan)
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-Low Rate TCP Scan"; flags:S; flow:stateless; threshold: type both, track by_src, count 100, seconds 60; classtype:network-scan; sid:1000006; rev:1;)
+
+# Detect UDP scan
+alert udp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-UDP Port Scan"; threshold: type both, track by_src, count 30, seconds 60; classtype:network-scan; sid:1000007; rev:1;)
+
+# Detect ICMP sweep / ping scan
+alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-ICMP Address Sweep"; itype:8; threshold: type both, track by_src, count 20, seconds 60; classtype:attempted-recon; sid:1000008; rev:1;)
+
+# Detect half-open scan (SYN followed by RST)
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-Half-Open Scan"; flags:S; flow:stateless; threshold: type both, track by_src, count 50, seconds 30; classtype:attempted-recon; sid:1000009; rev:1;)
+
+# Detect OS fingerprint attempts (nmap -O)
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"NIDS-TCP OS Fingerprint Attempt"; flags:S; id:0; ttl:64; ipopts:Loose; threshold: type both, track by_src, count 5, seconds 60; classtype:attempted-recon; sid:1000010; rev:1;)

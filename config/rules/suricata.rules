@@ -1,0 +1,23 @@
+#
+# Suricata Rules - Main Rule File
+# Network Intrusion Detection System
+#
+# This file includes all rule files for the NIDS configuration.
+# Each rule file focuses on a specific category of threats.
+#
+# Rule IDs (SIDs) are organized by category:
+#   1000000-1999999: Network Scan Detection
+#   2000000-2999999: Web Application Attacks
+#   3000000-3999999: Authentication Attacks
+#   4000000-4999999: Malware & C2 Detection
+#   5000000-5999999: DoS/DDoS Detection
+#   6000000-6999999: Protocol Anomalies & Covert Channels
+#
+
+# Include rule files
+include network-scans.rules
+include web-attacks.rules
+include auth-attacks.rules
+include malware-c2.rules
+include dos-ddos.rules
+include protocol-anomalies.rules
